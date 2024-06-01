@@ -28,7 +28,7 @@ jobs:
           fi
 
       - name: Commit and Push Changes
-        if: success()  # Only run this step if the previous step was successful
+        if: steps.check-csv.outcome == 'success'  # Only run this step if the previous step was successful
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
@@ -46,14 +46,9 @@ jobs:
           PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           python MFCode.py
-          python BSEData.py
-          python Benchmark.py
-          python "Historical Returns.py"
-          python "Index Latest.py"
-          python "Peer Comparison.py"
-          python "Scheme Risk.py"
-          python "Returns Data.py"
-
+          python Holdings.py
+          python Stkcode.py
+          
       - name: Commit CSV files
         run: |
           git config --global user.email "actions@github.com"
