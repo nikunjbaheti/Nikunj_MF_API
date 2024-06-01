@@ -1,0 +1,63 @@
+name: Run Python Scripts and Commit CSV Files
+
+on:
+  workflow_dispatch:  # Triggered manually
+  schedule:
+    - cron: '0 0 1 * *'  # Run every 1st day of the month
+
+jobs:
+  build:
+    name: MF Holdings
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+
+      - name: Check for CSV Files
+        run: |
+          if [ -n "$(find . -maxdepth 1 -name '*.csv' -print -quit)" ]; then
+            echo "CSV files found. Deleting..."
+            find . -type f -name "*.csv" -delete
+          else
+            echo "No CSV files found. Skipping deletion."
+            exit 0  # Exit successfully to skip the next steps
+          fi
+
+      - name: Commit and Push Changes
+        if: success()  # Only run this step if the previous step was successful
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git add .
+          git commit -m "Delete CSV files"
+          git push
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt  # Replace 'path/to/requirements.txt' with the actual path
+
+      - name: Run Python Scripts
+        env:
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          python MFCode.py
+          python BSEData.py
+          python Benchmark.py
+          python "Historical Returns.py"
+          python "Index Latest.py"
+          python "Peer Comparison.py"
+          python "Scheme Risk.py"
+          python "Returns Data.py"
+
+      - name: Commit CSV files
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git add *.csv  # Replace 'path/to/your/csv/files' with the actual path
+          git commit -m "Auto-commit CSV files" || true  # Continue even if there are no changes
+          git push
